@@ -20,18 +20,24 @@ GH_PROJECT=	spork
 # shamelessly advancing to hash with my fix for `make test`.
 GH_TAGNAME=	a444546
 
+# OK this works, but its highly unmaintainable. I have to take and fix paths:
+# 	${WRKSRC}/jpm_tree/bin/* ! *.h -> ${PREFIX}/bin/*
+# 	${WRKSRC}/jpm_tree/lib/*.h -> ${PREFIX}/include/*.h
+# 	${WRKSRC}/jpm_tree/lib/* -> ${PREFIX}/lib/janet/*
+# 	${WRKSRC}/jpm_tree/man/*.1 -> ${PREFIX}/share/man/man1/*.1.gz
+#
+# Notice the build system gzipped the man page too :)
+SUB_FILES=	spork.jdn
+
 do-build:
 	cd ${WRKSRC} && ${LOCALBASE}/bin/jpm --tree=${WRKSRC}/jpm_tree "install"
 
-# TODO: while this does copy over manifest to /usr/local/lib/janet/.manifests/spork.jdn
-#       it has incorrect build paths. can't assume /usr/local though so I may need
-#       to just stage it.
 do-install:
-	${MKDIR} ${STAGEDIR}${PREFIX}/lib/janet
 	cd ${WRKSRC}/jpm_tree/bin && ${COPYTREE_BIN} . ${STAGEDIR}${PREFIX}/bin
 	cd ${WRKSRC}/jpm_tree/lib && ${COPYTREE_SHARE} . ${STAGEDIR}${PREFIX}/lib/janet "! -name *\.h"
-	cd ${WRKSRC}/jpm_tree/lib && ${COPYTREE_SHARE} .  ${STAGEDIR}${PREFIX}/include/janet
+	cd ${WRKSRC}/jpm_tree/lib && ${COPYTREE_SHARE} .  ${STAGEDIR}${PREFIX}/include/janet "-name *\.h"
 	${INSTALL_MAN} ${WRKSRC}/jpm_tree/man/janet-pm.1 ${STAGEDIR}${PREFIX}/share/man/man1
+	${INSTALL_DATA} ${WRKDIR}/spork.jdn ${STAGEDIR}${PREFIX}/lib/janet/.manifests
 
 do-test:
 	cd ${WRKSRC} && jpm test -l
