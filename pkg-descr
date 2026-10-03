@@ -1,0 +1,2 @@
+spork is the Janet Utility library. It also provides janet-pm(1) which can be
+used to build more complex janet projects than jpm(1).
