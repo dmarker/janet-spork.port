@@ -2,7 +2,9 @@ bin/janet-format
 bin/janet-netrepl
 bin/janet-pm
 include/janet/tarray.h
-lib/janet/.manifests/spork.jdn
+lib/janet/bundle/spork/info.jdn
+lib/janet/bundle/spork/init.janet
+lib/janet/bundle/spork/manifest.jdn
 lib/janet/spork/argparse.janet
 lib/janet/spork/base64.a
 lib/janet/spork/base64.meta.janet

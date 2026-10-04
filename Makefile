@@ -10,8 +10,8 @@ WWW=		https://github.com/janet-lang/spork
 LICENSE=	MIT
 LICENSE_FILE=	${WRKSRC}/LICENSE
 
-BUILD_DEPENDS=	jpm>=1.2.0:lang/jpm
-RUN_DEPENDS=	janet>=1.17.2:lang/janet \
+BUILD_DEPENDS=	janet>=1.38.0:lang/janet
+RUN_DEPENDS=	janet>=1.38.0:lang/janet \
 		git:devel/git
 
 USE_GITHUB=	yes
@@ -20,26 +20,30 @@ GH_PROJECT=	spork
 # shamelessly advancing to hash with my fix for `make test`.
 GH_TAGNAME=	a444546
 
-# OK this works, but its highly unmaintainable. I have to take and fix paths:
+# OK this works, and the file is much easier to deal with, keep eye out for:
 # 	${WRKSRC}/jpm_tree/bin/* ! *.h -> ${PREFIX}/bin/*
-# 	${WRKSRC}/jpm_tree/lib/*.h -> ${PREFIX}/include/*.h
-# 	${WRKSRC}/jpm_tree/lib/* -> ${PREFIX}/lib/janet/*
+# 	${WRKSRC}/jpm_tree/*.h -> ${PREFIX}/include/*.h
+# 	${WRKSRC}/jpm_tree/bundle/* -> ${PREFIX}/lib/janet/bundle/*
+# 	${WRKSRC}/jpm_tree/spork/* -> ${PREFIX}/lib/janet/spork/*
 # 	${WRKSRC}/jpm_tree/man/*.1 -> ${PREFIX}/share/man/man1/*.1.gz
 #
 # Notice the build system gzipped the man page too :)
-SUB_FILES=	spork.jdn
+SUB_FILES=	manifest.jdn
 
 do-build:
-	cd ${WRKSRC} && ${LOCALBASE}/bin/jpm --tree=${WRKSRC}/jpm_tree "install"
+	${MKDIR} ${WRKSRC}/jpm_tree
+	cd ${WRKSRC} && JANET_PATH=jpm_tree ${LOCALBASE}/bin/janet --install .
+
 
 do-install:
+	cd ${WRKSRC}/jpm_tree && ${COPYTREE_BIN} . ${STAGEDIR}${PREFIX}/include/janet "-name *\.h"
 	cd ${WRKSRC}/jpm_tree/bin && ${COPYTREE_BIN} . ${STAGEDIR}${PREFIX}/bin
-	cd ${WRKSRC}/jpm_tree/lib && ${COPYTREE_SHARE} . ${STAGEDIR}${PREFIX}/lib/janet "! -name *\.h"
-	cd ${WRKSRC}/jpm_tree/lib && ${COPYTREE_SHARE} .  ${STAGEDIR}${PREFIX}/include/janet "-name *\.h"
-	${INSTALL_MAN} ${WRKSRC}/jpm_tree/man/janet-pm.1 ${STAGEDIR}${PREFIX}/share/man/man1
-	${INSTALL_DATA} ${WRKDIR}/spork.jdn ${STAGEDIR}${PREFIX}/lib/janet/.manifests
+	cd ${WRKSRC}/jpm_tree/bundle && ${COPYTREE_SHARE} . ${STAGEDIR}${PREFIX}/lib/janet/bundle
+	cd ${WRKSRC}/jpm_tree/spork && ${COPYTREE_SHARE} . ${STAGEDIR}${PREFIX}/lib/janet/spork
+	${INSTALL_MAN} ${WRKSRC}/jpm_tree/man/man1/janet-pm.1 ${STAGEDIR}${PREFIX}/share/man/man1
+	${INSTALL_DATA} ${WRKDIR}/manifest.jdn ${STAGEDIR}${PREFIX}/lib/janet/bundle/spork
 
 do-test:
-	cd ${WRKSRC} && jpm test -l
+	cd ${WRKSRC} && JANET_PATH=jpm_tree janet -l ./bundle -e '(check)'
 
 .include <bsd.port.mk>
